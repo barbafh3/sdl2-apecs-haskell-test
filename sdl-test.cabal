@@ -18,12 +18,17 @@ extra-source-files:  CHANGELOG.md
 
 executable sdl-test
   main-is:             Main.hs
-  -- other-modules:
+  other-modules:
+                       GameSystem
+                       GameComponents
+                       GameRendering
+                       GameLoop
   -- other-extensions:
   build-depends:       base >=4.14 && <4.15
 					  ,apecs
 					  ,sdl2
 					  ,sdl2-image
+            ,sdl2-gfx
 					  ,linear
   -- hs-source-dirs:
   default-language:    Haskell2010
