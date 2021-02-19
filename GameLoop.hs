@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module GameLoop (gameLoop, moveCharacters, printPositions) where
+module GameLoop (gameLoop, moveCharacters, printPositions, filterPayload, handleEvent) where
 
 import Apecs
 import qualified SDL
@@ -19,6 +19,7 @@ moveCharacters :: System' ()
 moveCharacters =
   cmap (\(Position (V2 x y), Speed s) -> Position $ V2 (x + s) (y + s))
 
+
 printPositions :: System' ()
 printPositions = do
   cmapM_ (\(Position (V2 x y)) -> liftIO $ putStrLn (show x ++ " " ++ show y))
@@ -26,20 +27,26 @@ printPositions = do
 
 handlePlayerInput :: [SDL.EventPayload] -> Double -> System' ()
 handlePlayerInput [] _ = return ()
-handlePlayerInput [event] delta = handleEvent event
-handlePlayerInput (x:xs) delta = do
-  handleEvent x
-  handlePlayerInput xs delta
-  
+handlePlayerInput [event] delta = filterPayload event
+handlePlayerInput (event:events) delta = do
+  filterPayload event
+  handlePlayerInput events delta
 
-handleEvent :: SDL.EventPayload -> System' ()
-handleEvent (SDL.KeyboardEventData _ SDL.Pressed False keysym) = 
-  case SDL.keysymKeyCode keysym of
-    SDL.KeycodeW -> do cmap (\(Player, Position (V2 x y), Speed s) -> Position $ V2 x (y - s)
-    SDL.KeycodeS -> do cmap (\(Player, Position (V2 x y), Speed s) -> Position $ V2 x (y + s)
-    SDL.KeycodeA -> do cmap (\(Player, Position (V2 x y), Speed s) -> Position $ V2 x (x - s)
-    SDL.KeycodeD -> do cmap (\(Player, Position (V2 x y), Speed s) -> Position $ V2 x (x + s)
-    _ -> return ()
-handleEvent _ = return ()
+filterPayload :: SDL.EventPayload -> System' ()
+filterPayload (SDL.KeyboardEvent k) = handleEvent k
+filterPayload _ = return ()
   
-  -- cmap (\(Player, Position (V2 x y), Speed s) -> Position $ V2 (x + s) (y + s))
+handleEvent :: SDL.KeyboardEventData -> System' ()
+handleEvent (SDL.KeyboardEventData _ _ _ keysym) = do
+  let key = SDL.keysymKeycode keysym
+  cmap (\(Player, Position (V2 x y), Speed speed) -> do
+    Position $ filterMovementKeys key speed $ V2 x y)
+
+filterMovementKeys :: SDL.Keycode -> CInt -> V2 CInt -> V2 CInt
+filterMovementKeys keycode speed (V2 x y) =
+  case keycode of
+    SDL.KeycodeW -> V2 x (y - speed)
+    SDL.KeycodeS -> V2 x (y + speed)
+    SDL.KeycodeA -> V2 (x - speed) y
+    SDL.KeycodeD -> V2 (x + speed) y
+    _ -> V2 x y

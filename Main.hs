@@ -34,6 +34,7 @@ main = do
   Frames.set manager 60
 
   tileset <- SDL.Image.loadTexture renderer "tileset.png"
+  putStrLn "Main: Tileset loaded"
   runSystem initializeEntities world
 
   let loop prevTicks secondTick fpsAcc prevFps = do
@@ -42,7 +43,7 @@ main = do
         payload <- map SDL.eventPayload <$> SDL.pollEvents
         let quit = SDL.QuitEvent `elem` payload
             rawDelta = ticks - prevTicks
-            doubleDelta = (fromIntegral rawDelta) :: Double
+            doubleDelta = fromIntegral rawDelta :: Double
             delta = (doubleDelta / 1000.0) :: Double
             calcFps = secondTick + rawDelta > 1000
             newFps = if calcFps then fpsAcc + 1 else prevFps
@@ -58,12 +59,14 @@ main = do
 
   loop 0 0 0 0
 
+  putStrLn "Main: Cleaning resources..."
+
   Frames.destroyManager manager
   SDL.destroyRenderer renderer
   SDL.destroyWindow window
   SDL.Image.quit
   SDL.quit
-  putStrLn "Goodbye!"
+  putStrLn "Main: Closing game..."
 
 quitCheck :: System' ()
 quitCheck = undefined
