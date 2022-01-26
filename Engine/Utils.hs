@@ -3,10 +3,11 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Engine.Utils (
-    (<+>), (<->), 
+    (<+>), (<->), (<#>),
     vectorLength, normalizeVector, 
     vectorLengthF, normalizeVectorF, 
-    gget, truncate', loadFonts, createResourceMap
+    gget, truncate', loadFonts, createResourceMap,
+    getRelativeBoxPosition
 ) where
 
 import Apecs (get, global)
@@ -66,3 +67,15 @@ loadFonts = traverse getFont
 
 createResourceMap :: [(String, a)] -> HashMap String a
 createResourceMap = foldl (\m (k, v) -> insert k v m) empty
+
+getRelativeBoxPosition :: V2 CInt -> V2 CInt -> V2 CInt -> (V2 CInt, V2 CInt)
+getRelativeBoxPosition (V2 x y) (V2 w h) (V2 sw sh) = (pos1, pos2)
+  where
+      (V2 sdx sdy) = V2 ((w - sw) `div` 2) ((h - sh) `div` 2)
+      pos1@(V2 p1x p1y) = V2 (x - sdx) (y - sdy)
+      pos2 = V2 (p1x + w) (p1y + h)
+
+
+-- | Maps the function to the values of a V2 CInt, returning a V2 Float
+(<#>) :: (CInt -> Float) -> V2 CInt -> V2 Float
+f <#> (V2 x y) = V2 (f x) (f y)

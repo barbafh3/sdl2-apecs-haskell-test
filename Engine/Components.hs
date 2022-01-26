@@ -18,7 +18,7 @@ module Engine.Components(
     HaulTask(..), HaulRequest(..),
     WhiteFont(..), BlackFont(..),
     Sprite(..), UIText(..), Fonts(..),
-    Button(..),
+    Button(..), InterfaceBox(..),
 ) where
 
 import Apecs
@@ -28,7 +28,7 @@ import System.Exit
 import Control.Monad
 import Data.Monoid
 import Data.Semigroup (Semigroup)
-import Engine.DataTypes (StorageList, DrawLevels (Default), EntityState, StorageItem, FontMap)
+import Engine.DataTypes (StorageList, DrawLevels (Default), EntityState, StorageItem, FontMap, Clicked, Hover, Toggled, Offset)
 import SDL (Texture)
 import Foreign.C (CInt)
 import SDL.Video
@@ -64,7 +64,7 @@ instance Component IdleMovement where type Storage IdleMovement = Map IdleMoveme
 newtype IdlePoint = IdlePoint (V2 Float) deriving Show
 instance Component IdlePoint where type Storage IdlePoint = Map IdlePoint
 
-data Sprite = Sprite (V2 CInt) (V2 CInt) deriving Show
+data Sprite = Sprite (V2 CInt) (V2 CInt) Float deriving Show
 instance Component Sprite where type Storage Sprite = Map Sprite
 
 data Building = Building deriving Show
@@ -124,8 +124,11 @@ instance Component HaulRequest where type Storage HaulRequest = Map HaulRequest
 data ConstructRequest = ConstructRequest deriving Show
 instance Component ConstructRequest where type Storage ConstructRequest = Map ConstructRequest
 
-newtype Button = Button Bool deriving Show
+data Button = Button Clicked Hover Toggled deriving Show
 instance Component Button where type Storage Button = Map Button
+
+newtype InterfaceBox = InterfaceBox (V2 Float) deriving Show
+instance Component InterfaceBox where type Storage InterfaceBox = Map InterfaceBox
 
 newtype WhiteFont = WhiteFont (Maybe String) deriving Show
 instance Semigroup WhiteFont where (<>) = mappend

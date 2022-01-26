@@ -38,7 +38,7 @@ spawnHauler pos idlePoint vel = do
     (IdlePoint idlePoint,
     (Position pos,
     (Velocity vel,
-    (Sprite (V2 (6 * tileSize) (12 * tileSize)) defaultRectSize,
+    (Sprite (V2 (6 * tileSize) (12 * tileSize)) defaultRectSize 1,
     TargetPosition (V2 0 0))))))))))
   return ()
 

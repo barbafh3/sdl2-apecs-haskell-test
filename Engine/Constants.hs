@@ -8,8 +8,8 @@ module Engine.Constants (
     defaultRectSize,
     defaultRectSizeV2,
     tilesetPath,
-    whiteFontPath,
-    blackFontPath,
+    pxFontPath,
+    ptsFontPath,
     fontCharSize,
     targetFps,
     haulerCapacity
@@ -40,9 +40,10 @@ verticalTileCount = 900 / 16
 fontCharSize :: (Int, Int)
 fontCharSize = (10, 16)
 
+tilesetPath, pxFontPath, ptsFontPath :: String
 tilesetPath = "Assets/tileset.png"
-whiteFontPath = "Assets/my-font-black.png"
-blackFontPath = "Assets/my-font-white.png"
+pxFontPath = "Assets/PublicPixel.ttf"
+ptsFontPath = "Assets/prstartk.ttf"
 
 haulerCapacity :: Float
 haulerCapacity = 10.0

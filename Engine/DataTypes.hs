@@ -1,9 +1,16 @@
 module Engine.DataTypes (
     StorageItem(..), StorageList(..), DrawLevels(..), EntityState(..),
-    FontMap, FontResource
+    FontMap, FontResource, Hover, Clicked, Toggled, Offset
 ) where
 import SDL.Font (Font)
 import qualified Data.HashMap.Strict as HM
+import Foreign.C.Types (CInt)
+
+type Hover = Bool
+type Clicked = Bool
+type Toggled = Bool
+
+type Offset = CInt
 
 type StorageItem = (String, Int)
 

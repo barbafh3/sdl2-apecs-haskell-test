@@ -16,11 +16,21 @@ import Engine.Rendering
 import Colors
 import Engine.Villagers (spawnHauler)
 import Engine.Buildings (spawnHouse, spawnStorage)
-import Engine.Constants (tileSize, defaultRectSize, defaultRectSizeV2, tilesetPath, screenWidth, screenHeight)
+import Engine.Constants (
+  tileSize, 
+  defaultRectSize, 
+  defaultRectSizeV2, 
+  tilesetPath, 
+  screenWidth, 
+  screenHeight, 
+  pxFontPath, 
+  ptsFontPath)
 import Engine.DataTypes (DrawLevels(Debug))
 import Engine.Input (handleInputPayload)
-import Engine.Utils (loadFonts, createResourceMap)
+import Engine.Utils (loadFonts, createResourceMap, (<#>))
 import qualified SDL.Font
+import Engine.Particles (spawnParticles)
+import Engine.UI (spawnButton)
 
 main :: IO ()
 main = do
@@ -81,26 +91,24 @@ main = do
 
 initialize :: StdGen ->  System' ()
 initialize rng = do
-  spawnHauler (V2 680 300) (V2 640 450) (V2 60 60)
-  spawnHauler (V2 600 100) (V2 640 450) (V2 60 60)
+  spawnHauler (V2 680 300) (V2 640 450) (V2 100 100)
+  spawnHauler (V2 600 100) (V2 640 450) (V2 100 100)
   spawnHouse $ V2 1000 200
   newEntity (
       Building,
       EntityName "Idle Point",
-      Sprite (V2 (2 * tileSize) (6 * tileSize)) defaultRectSize,
+      Sprite (V2 (2 * tileSize) (6 * tileSize)) defaultRectSize 1,
       BoundingBox (V2 640 450) (V2 8 8),
       InteractionBox (V2 640 450) defaultRectSizeV2,
       Position $ V2 640 450)
   spawnStorage (V2 300 500) [("Wood", 100)]
-  newEntity (
-      Button False,
-      Sprite (V2 (1 * tileSize) (2 * tileSize)) defaultRectSize,
-      InteractionBox (V2 500 200) (defaultRectSizeV2 * 2),
-      Position $ V2 50 800)
+  spawnButton (V2 50 800) (1, 2) (V2 24 24) 2
   newEntity $ Rng rng
   newEntity $ DrawLevel Debug
   newEntity $ InfoPanel Nothing
-  fonts <- liftIO $ loadFonts [("Assets/prstartk.ttf", 12)]
+  fonts <- liftIO $ loadFonts [(pxFontPath, 8), (ptsFontPath, 8)]
+  liftIO $ print $ show fonts
   newEntity $ Fonts $ createResourceMap fonts
   newEntity (Position $ V2 20 20, UIText "Test")
+  spawnParticles 10
   return ()

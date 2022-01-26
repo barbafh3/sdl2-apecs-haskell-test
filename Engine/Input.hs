@@ -1,7 +1,7 @@
 module Engine.Input (handleInputPayload) where
 
 import Apecs
-import Engine.Collisions (isInsideInteractionBox)
+import Engine.Collisions (isInsideInteractionBox, isInsideBoundingBox, isInsideInteractionBoxI)
 import Engine.Components
 import Engine.Constants (defaultRectSizeV2)
 import Control.Monad (when)
@@ -9,16 +9,68 @@ import qualified Control.Monad
 import Engine.DataTypes (DrawLevels (..), EntityState (Idle))
 import Linear (V2 (V2))
 import Engine.Particles (spawnParticles)
-import Engine.Utils (gget)
+import Engine.Utils (gget, getRelativeBoxPosition, (<#>))
 import Engine.Buildings (requestHaulers)
 import Engine.World (System')
-import SDL (EventPayload)
+import SDL (
+  EventPayload (KeyboardEvent, MouseMotionEvent),
+  MouseButtonEventData (mouseButtonEventMotion),
+  KeyboardEventData,
+  MouseMotionEventData (mouseMotionEventPos),
+  InputMotion (Pressed, Released),
+  getAbsoluteMouseLocation, Point (P))
+import SDL.Event (
+  EventPayload(MouseButtonEvent, MouseMotionEvent),
+  MouseButtonEventData (mouseButtonEventButton),
+  MouseButton (ButtonLeft))
+import SDL.Event (MouseButtonEventData(mouseButtonEventPos))
 
 handleInputPayload :: [EventPayload] -> System' ()
 handleInputPayload [] = return ()
-handleInputPayload [payload] = return ()
-handleInputPayload (payload : list) = return ()
+handleInputPayload [MouseButtonEvent ev] = handleMouseEvent ev
+handleInputPayload [MouseMotionEvent ev] = handleMouseMotionEvent ev
+handleInputPayload [KeyboardEvent ev] = handleKeyboardEvent ev
+handleInputPayload [_] = return ()
+handleInputPayload (MouseButtonEvent ev : list) = do
+  handleMouseEvent ev
+  handleInputPayload list
+handleInputPayload (MouseMotionEvent ev : list) = do
+  handleMouseMotionEvent ev
+  handleInputPayload list
+handleInputPayload (KeyboardEvent ev : list) = do
+  handleKeyboardEvent ev
+  handleInputPayload list
+handleInputPayload (_ : list) = handleInputPayload list
 
+handleMouseMotionEvent :: MouseMotionEventData -> System' ()
+handleMouseMotionEvent ev = do
+  let (P (V2 mx my)) = mouseMotionEventPos ev
+  cmapM_ $ 
+    \(Button clicked _ toggled, InterfaceBox bSize, Position pos, Sprite _ size _, button) -> do
+          let intMPos = V2 (fromIntegral mx) (fromIntegral my)
+          let box = InteractionBox pos bSize
+          if isInsideInteractionBoxI intMPos box 
+             then set button (Button clicked True toggled)
+               else set button (Button clicked False toggled)
+
+handleMouseEvent :: MouseButtonEventData -> System' ()
+handleMouseEvent ev =
+  case mouseButtonEventMotion ev of
+    Pressed -> case mouseButtonEventButton ev of
+                 ButtonLeft -> do
+                   (SDL.P (V2 mx my)) <- getAbsoluteMouseLocation
+                   cmapM_ $ \(Button _ hover toggled, InterfaceBox bSize, Position pos, Sprite _ size _, button) -> do
+                         let intMPos = V2 (fromIntegral mx) (fromIntegral my)
+                         let relativePos = getRelativeBoxPosition (round <$> pos) (round <$> bSize) size
+                         let box = InteractionBox (fromIntegral <#> fst relativePos) bSize
+                         when (isInsideInteractionBoxI intMPos box) $ set button (Button True hover toggled)
+                 _ -> return()
+    Released -> cmapM_ $ \(Button _ hover toggled, button) -> set button $ Button False hover toggled
+
+
+
+handleKeyboardEvent :: KeyboardEventData -> System' ()
+handleKeyboardEvent ev = return ()
 -- handleEvent :: Event -> System' ()
 -- handleEvent (EventMotion (x, y)) = set global $ MousePosition (V2 x y)
 
@@ -69,8 +121,8 @@ handleInputPayload (payload : list) = return ()
 changeIdlePoint :: Int -> Int -> System' ()
 changeIdlePoint ety1 ety2 = cmapM_ $
   \(Building, Position pos, Entity e1) ->
-    when (e1 == ety1) $ cmap $ 
-      \(Villager _, IdlePoint ip, Entity e2) -> 
+    when (e1 == ety1) $ cmap $
+      \(Villager _, IdlePoint ip, Entity e2) ->
         if e2 == ety2 then IdlePoint pos
         else IdlePoint ip
 

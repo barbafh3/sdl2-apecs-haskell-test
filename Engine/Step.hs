@@ -24,6 +24,7 @@ step rng dT = do
   when (drawLevel == DrawLevel All || drawLevel == DrawLevel Particles) $ spawnParticles 1
   updateVillagers dT
   updateBuildings dT
+  -- spawnParticles 1
   stepParticles dT
   stepParticlePositions dT
 

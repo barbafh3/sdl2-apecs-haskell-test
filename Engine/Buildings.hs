@@ -27,7 +27,7 @@ spawnHouse pos = do
       Building,
       EntityName "House",
       HaulRequest ("Wood", 60) 0,
-      Sprite (V2 (1 * tileSize) (2 * tileSize)) defaultRectSize,
+      Sprite (V2 (1 * tileSize) (2 * tileSize)) defaultRectSize 1,
       StorageSpace [],
       BoundingBox pos (V2 8 8),
       InteractionBox pos defaultRectSizeV2,
@@ -39,7 +39,7 @@ spawnStorage pos storage = do
   newEntity (
       Building,
       EntityName "Storage",
-      Sprite (V2 (6 * tileSize) (4 * tileSize)) defaultRectSize,
+      Sprite (V2 (6 * tileSize) (4 * tileSize)) defaultRectSize 1,
       BoundingBox pos (V2 8 8),
       InteractionBox pos defaultRectSizeV2,
       StorageSpace storage,
