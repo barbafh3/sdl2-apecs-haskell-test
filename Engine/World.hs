@@ -8,7 +8,7 @@ import Apecs
 import Engine.Components
 
 makeWorld "World" [
-    ''Position, ''Velocity, ''Particle, ''MousePosition, ''GlobalUnique, ''Villager,
+    ''Position, ''Velocity, ''Particle, ''MousePosition, ''Villager,
     ''IdleMovement, ''TargetPosition, ''IdlePoint, ''Rng, ''Sprite, ''Building, ''StorageSpace,
     ''BoundingBox, ''DrawLevel, ''InteractionBox, ''InfoPanel, ''EntityName, ''Hauler, ''Origin,
     ''Destination, '' Builder, ''Backpack, ''HaulTask, ''HaulRequest, ''Button, ''Fonts,
