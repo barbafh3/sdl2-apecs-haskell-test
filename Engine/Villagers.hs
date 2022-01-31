@@ -132,7 +132,7 @@ checkCarryDestination :: System' ()
 checkCarryDestination = cmapM_ $
     \(Villager state, HaulTask item orig dest, villager) -> 
       when (state == Carrying) $ do
-    (Building, Position pos) <- get (Entity dest)
+    (Building _, Position pos) <- get (Entity dest)
     (TargetPosition target) <- get villager
     unless (pos == target) do
       set villager (Villager state, TargetPosition pos)
@@ -142,7 +142,7 @@ checkPickupDestination = cmapM $
   \(Villager state, HaulTask item orig dest, TargetPosition target) ->
     if state == Loading 
       then get (Entity orig) >>= \case
-          Just (Building, Position pos) -> return (Villager state, TargetPosition pos)
+          Just (Building _, Position pos) -> return (Villager state, TargetPosition pos)
           Nothing -> return (Villager Idle, TargetPosition target)
         else return (Villager state, TargetPosition target)
 

@@ -16,15 +16,15 @@ import Engine.Components
 import Engine.DataTypes
 import Apecs
 import Engine.Constants (haulerCapacity, tileSize, defaultRectSize, defaultRectSizeV2)
-import Engine.Utils (truncate')
+import Engine.Utils (truncate', gget)
 import Linear (V2(..))
-import Engine.World (System')
+import Engine.World (System', World)
 import Foreign.C (CInt)
 
-spawnHouse :: V2 Float -> System' ()
-spawnHouse pos = do
+spawnHouse :: V2 Float -> StructureState -> System' Entity
+spawnHouse pos state = do
   newEntity (
-      Building,
+      Building state,
       EntityName "House",
       HaulRequest ("Wood", 60) 0,
       Sprite (V2 (1 * tileSize) (2 * tileSize)) defaultRectSize 1,
@@ -32,12 +32,11 @@ spawnHouse pos = do
       BoundingBox pos (V2 8 8),
       InteractionBox pos defaultRectSizeV2,
       Position pos)
-  return ()
 
-spawnStorage :: V2 Float -> [StorageItem] -> System' ()
-spawnStorage pos storage = do
+spawnStorage :: V2 Float -> [StorageItem] -> StructureState -> System' ()
+spawnStorage pos storage state = do
   newEntity (
-      Building,
+      Building state,
       EntityName "Storage",
       Sprite (V2 (6 * tileSize) (4 * tileSize)) defaultRectSize 1,
       BoundingBox pos (V2 8 8),
@@ -49,6 +48,7 @@ spawnStorage pos storage = do
 updateBuildings :: Float -> System'()
 updateBuildings dT = do
   runBuildingTask
+  followMouseCursor
 
 emptyStorageList :: StorageList
 emptyStorageList = [("Wood", 0)]
@@ -94,12 +94,27 @@ resourceCount resource (pair : list)
     | otherwise = resourceCount resource list
 
 
+followMouseCursor :: System' ()
+followMouseCursor = do
+  cmapM $ \(Building state, Position pos, building) -> do
+    case state of
+      Placement -> do
+        MousePosition mPos <- gget @MousePosition
+        liftIO $ print $ "following mouse - mPos: " ++ show mPos
+        (InteractionBox ibPos ibSize, BoundingBox bbPos bbSize) <- get building 
+        set building (Position mPos, InteractionBox mPos ibSize, BoundingBox mPos bbSize)
+      _ -> return ()
+
+
 runBuildingTask :: System' ()
 runBuildingTask = cmapM_ $
-  \(Building, HaulRequest (resource, requiredamount) amount, building) -> do
-    let haulerCount = round $ (fromIntegral requiredamount :: Float) / haulerCapacity
-    let (Entity ety) = building
-    cfoldM_ (requestHaulers (HaulTask (resource, ceiling haulerCapacity) 4 ety) building) haulerCount
+  \(Building state, HaulRequest (resource, requiredamount) amount, building) -> do
+    case state of
+      Construction -> do
+        let haulerCount = round $ (fromIntegral requiredamount :: Float) / haulerCapacity
+        let (Entity ety) = building
+        cfoldM_ (requestHaulers (HaulTask (resource, ceiling haulerCapacity) 4 ety) building) haulerCount
+      _ -> return ()
 
 requestHaulers :: HaulTask -> Entity -> Int -> (Villager, Entity) -> System' Int
 requestHaulers haul building remainingSpots (Villager state, villager) =

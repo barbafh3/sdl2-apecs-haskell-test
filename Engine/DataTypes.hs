@@ -1,6 +1,7 @@
 module Engine.DataTypes (
     StorageItem(..), StorageList(..), DrawLevels(..), EntityState(..),
-    FontMap, FontResource, Hover, Clicked, Toggled, Offset
+    FontMap, FontResource, Hover, Clicked, Toggled, Offset, ClickState(..),
+    StructureState(..)
 ) where
 import SDL.Font (Font)
 import qualified Data.HashMap.Strict as HM
@@ -18,8 +19,12 @@ type StorageList = [StorageItem]
 
 data DrawLevels = Default | Collision | Particles | All | Debug deriving (Show, Eq)
 
-data EntityState = Idle | Carrying | Loading | Constructing | Enabled | Disabled deriving (Show, Eq)
+data EntityState = Idle | Carrying | Loading deriving (Show, Eq)
 
 type FontResource = (String, Font)
 type FontMap = HM.HashMap String Font
+
+data ClickState = Clicked | ClickReleased | ClickHeld | NotClicked deriving Show
+
+data StructureState = Placement | Construction | Enabled | Disabled deriving Show
 

@@ -18,8 +18,8 @@ module Engine.Components(
     HaulTask(..), HaulRequest(..),
     Sprite(..), UIText(..), Fonts(..),
     Button(..), InterfaceBox(..),
+    HouseButton(..), SelectedConstruction(..),
 ) where
-
 import Apecs
 import Linear
 import System.Random
@@ -28,14 +28,15 @@ import Control.Monad
 import Data.Monoid
 import Data.Semigroup (Semigroup)
 import Engine.DataTypes (
-    StorageList, DrawLevels (Default), 
-    EntityState, StorageItem, FontMap, 
-    Clicked, Hover, Toggled, Offset)
+    StorageList, DrawLevels (Default),
+    EntityState, StorageItem, FontMap,
+    ClickState(..), Hover, Toggled, Offset, StructureState(..))
 import SDL (Texture)
 import Foreign.C (CInt)
 import SDL.Video
 import SDL.Font (Font)
 import qualified Data.HashMap.Strict as HM
+
 
 ------------------------- ASSETS ---------------------------
 
@@ -51,7 +52,7 @@ instance Component Rng where type Storage Rng = Global Rng
 
 ------------------------- BUILDINGS ------------------------
 
-data Building = Building deriving Show
+newtype Building = Building StructureState deriving Show
 instance Component Building where type Storage Building = Map Building
 
 newtype StorageSpace = StorageSpace StorageList deriving Show
@@ -102,6 +103,18 @@ instance Semigroup DrawLevel where (<>) = mappend
 instance Monoid DrawLevel where mempty = DrawLevel Default
 instance Component DrawLevel where type Storage DrawLevel = Global DrawLevel
 
+------------------------- Global ---------------------------
+
+newtype SelectedConstruction = SelectedConstruction (Maybe Entity) deriving Show
+instance Semigroup SelectedConstruction where (<>) = mappend
+instance Monoid SelectedConstruction where mempty = SelectedConstruction Nothing
+instance Component SelectedConstruction where type Storage SelectedConstruction = Global SelectedConstruction
+
+------------------------- TAGS -----------------------------
+
+data HouseButton = HouseButton deriving Show
+instance Component HouseButton where type Storage HouseButton = Map HouseButton
+
 ------------------------- TASKS ----------------------------
 
 data HaulRequest = HaulRequest StorageItem Int deriving Show
@@ -124,7 +137,7 @@ instance Component BuildTask where type Storage BuildTask = Map BuildTask
 
 ------------------------- UI ------------------------------
 
-data Button = Button Clicked Hover Toggled deriving Show
+data Button = Button ClickState Hover Toggled deriving Show
 instance Component Button where type Storage Button = Map Button
 
 newtype InterfaceBox = InterfaceBox (V2 Float) deriving Show

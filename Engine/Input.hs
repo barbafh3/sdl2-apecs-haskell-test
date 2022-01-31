@@ -6,7 +6,7 @@ import Engine.Components
 import Engine.Constants (defaultRectSizeV2)
 import Control.Monad (when)
 import qualified Control.Monad
-import Engine.DataTypes (DrawLevels (..), EntityState (Idle))
+import Engine.DataTypes (DrawLevels (..), EntityState (Idle), ClickState (..))
 import Linear (V2 (V2))
 import Engine.Particles (spawnParticles)
 import Engine.Utils (gget, getRelativeBoxPosition, (<#>))
@@ -19,11 +19,11 @@ import SDL (
   MouseMotionEventData (mouseMotionEventPos),
   InputMotion (Pressed, Released),
   getAbsoluteMouseLocation, Point (P))
-import SDL.Event (
-  EventPayload(MouseButtonEvent, MouseMotionEvent),
-  MouseButtonEventData (mouseButtonEventButton),
-  MouseButton (ButtonLeft))
-import SDL.Event (MouseButtonEventData(mouseButtonEventPos))
+import SDL.Event
+    ( EventPayload(MouseButtonEvent, MouseMotionEvent),
+      MouseButtonEventData(mouseButtonEventButton),
+      MouseButton(ButtonLeft),
+      MouseButtonEventData(mouseButtonEventPos) )
 
 handleInputPayload :: [EventPayload] -> System' ()
 handleInputPayload [] = return ()
@@ -45,11 +45,11 @@ handleInputPayload (_ : list) = handleInputPayload list
 handleMouseMotionEvent :: MouseMotionEventData -> System' ()
 handleMouseMotionEvent ev = do
   let (P (V2 mx my)) = mouseMotionEventPos ev
-  cmapM_ $ 
+  cmapM_ $
     \(Button clicked _ toggled, InterfaceBox bSize, Position pos, Sprite _ size _, button) -> do
           let intMPos = V2 (fromIntegral mx) (fromIntegral my)
           let box = InteractionBox pos bSize
-          if isInsideInteractionBoxI intMPos box 
+          if isInsideInteractionBoxI intMPos box
              then set button (Button clicked True toggled)
                else set button (Button clicked False toggled)
 
@@ -59,13 +59,21 @@ handleMouseEvent ev =
     Pressed -> case mouseButtonEventButton ev of
                  ButtonLeft -> do
                    (SDL.P (V2 mx my)) <- getAbsoluteMouseLocation
-                   cmapM_ $ \(Button _ hover toggled, InterfaceBox bSize, Position pos, Sprite _ size _, button) -> do
+                   cmapM_ $ \(Button cState hover toggled, InterfaceBox bSize, Position pos, Sprite _ size _, button) -> do
+                     case cState of
+                       Clicked -> set button (Button ClickHeld hover toggled)
+                       NotClicked -> do
                          let intMPos = V2 (fromIntegral mx) (fromIntegral my)
                          let relativePos = getRelativeBoxPosition (round <$> pos) (round <$> bSize) size
                          let box = InteractionBox (fromIntegral <#> fst relativePos) bSize
-                         when (isInsideInteractionBoxI intMPos box) $ set button (Button True hover toggled)
+                         when (isInsideInteractionBoxI intMPos box) $ set button (Button Clicked hover toggled)
+                       _ -> return ()
                  _ -> return()
-    Released -> cmapM_ $ \(Button _ hover toggled, button) -> set button $ Button False hover toggled
+    Released -> cmapM_ $ 
+      \(Button cState hover toggled, button) -> 
+        case cState of
+          ClickReleased -> set button $ Button NotClicked hover toggled
+          _ -> set button $ Button ClickReleased hover toggled
 
 
 
@@ -120,7 +128,7 @@ handleKeyboardEvent ev = return ()
 
 changeIdlePoint :: Int -> Int -> System' ()
 changeIdlePoint ety1 ety2 = cmapM_ $
-  \(Building, Position pos, Entity e1) ->
+  \(Building _, Position pos, Entity e1) ->
     when (e1 == ety1) $ cmap $
       \(Villager _, IdlePoint ip, Entity e2) ->
         if e2 == ety2 then IdlePoint pos

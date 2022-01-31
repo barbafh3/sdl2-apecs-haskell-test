@@ -25,7 +25,7 @@ import Engine.Constants (
   screenHeight, 
   pxFontPath, 
   ptsFontPath)
-import Engine.DataTypes (DrawLevels(Debug))
+import Engine.DataTypes (DrawLevels(Debug), StructureState (Enabled, Construction))
 import Engine.Input (handleInputPayload)
 import Engine.Utils (loadFonts, createResourceMap, (<#>))
 import qualified SDL.Font
@@ -56,7 +56,7 @@ main = do
 
   tileset <- SDL.Image.loadTexture renderer tilesetPath
   putStrLn "Main: Tileset loaded"
-  runSystem (initialize rng) world
+  runSystem (initializeGame rng) world
 
   let loop prevTicks secondTick fpsAcc prevFps = do
         ticks <- SDL.ticks
@@ -89,26 +89,25 @@ main = do
   SDL.quit
   putStrLn "Main: Closing game..."
 
-initialize :: StdGen ->  System' ()
-initialize rng = do
+initializeGame :: StdGen ->  System' ()
+initializeGame rng = do
   spawnHauler (V2 680 300) (V2 640 450) (V2 100 100)
   spawnHauler (V2 600 100) (V2 640 450) (V2 100 100)
-  spawnHouse $ V2 1000 200
+  spawnHouse (V2 1000 200) Construction
   newEntity (
-      Building,
+      Building Enabled,
       EntityName "Idle Point",
       Sprite (V2 (2 * tileSize) (6 * tileSize)) defaultRectSize 1,
       BoundingBox (V2 640 450) (V2 8 8),
       InteractionBox (V2 640 450) defaultRectSizeV2,
       Position $ V2 640 450)
-  spawnStorage (V2 300 500) [("Wood", 100)]
+  spawnStorage (V2 300 500) [("Wood", 100)] Enabled
   spawnButton (V2 50 800) (1, 2) (V2 24 24) 2
   newEntity $ Rng rng
   newEntity $ DrawLevel Debug
   newEntity $ InfoPanel Nothing
   fonts <- liftIO $ loadFonts [(pxFontPath, 8), (ptsFontPath, 8)]
-  liftIO $ print $ show fonts
   newEntity $ Fonts $ createResourceMap fonts
   newEntity (Position $ V2 20 20, UIText "Test")
-  spawnParticles 10
+  newEntity $ SelectedConstruction Nothing
   return ()

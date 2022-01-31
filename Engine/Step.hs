@@ -17,16 +17,20 @@ import Engine.DataTypes (DrawLevels(..))
 import Engine.Particles (spawnParticles, stepParticles, stepParticlePositions)
 import Engine.Villagers (updateVillagers)
 import Engine.Buildings (updateBuildings)
+import Engine.UI (stepUI)
 
 step :: StdGen -> Float -> System' ()
 step rng dT = do
   drawLevel <- gget @DrawLevel
+  (SDL.P imPos) <- SDL.getAbsoluteMouseLocation
+  let mPos = fromIntegral <$> imPos
+  set global $ MousePosition mPos
   when (drawLevel == DrawLevel All || drawLevel == DrawLevel Particles) $ spawnParticles 1
   updateVillagers dT
   updateBuildings dT
-  -- spawnParticles 1
   stepParticles dT
   stepParticlePositions dT
+  stepUI dT
 
 gameLoop :: Double -> [SDL.EventPayload] -> System' ()
 gameLoop delta payload = do

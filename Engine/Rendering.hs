@@ -23,6 +23,7 @@ import Engine.Constants (pxFontPath, ptsFontPath)
 import qualified SDL.Raw.Primitive as SDL.Primitive
 import qualified SDL.Primitive
 import Debug.Trace (trace)
+import Engine.DataTypes (ClickState(..))
 
 drawTexture :: SDL.Renderer -> SDL.Texture -> Maybe (SDL.Rectangle CInt) -> Maybe (SDL.Rectangle CInt) -> System' ()
 drawTexture = SDL.copy
@@ -78,9 +79,11 @@ drawUI renderer tileset = do
 
 drawUIBoxes :: SDL.Renderer -> SDL.Texture -> System' ()
 drawUIBoxes renderer tileset = cmapM_ $
-  \(Button clicked hover toggled, InterfaceBox bSize@(V2 bw bh), Position pos@(V2 x y), Sprite coord size@(V2 sw sh) scale) -> do
+  \(Button cState hover toggled, InterfaceBox bSize@(V2 bw bh), Position pos@(V2 x y), Sprite coord size@(V2 sw sh) scale) -> do
       let color = if hover then blackPA2 else blackPA
-      let  color' = if clicked then blackP else color
+      let  color' = case cState of 
+                      Clicked -> blackP 
+                      _ -> color
       drawBox renderer (round <$> pos) (round <$> bSize) ((* round scale) <$> size) color'
       let centerPos = V2 (x + ((bw / 2) - (fromIntegral sw * scale / 2))) (y + ((bh / 2) - (fromIntegral sh * scale / 2)))
       drawTexture renderer tileset (Just $ SDL.Rectangle (SDL.P coord) size) (Just $ SDL.Rectangle (SDL.P (round <$> centerPos)) ((* round scale) <$> size))
@@ -111,7 +114,7 @@ drawBuildingInfo :: SDL.Renderer ->
   Int ->
   (Building, EntityName, StorageSpace, Maybe HaulRequest) ->
   System' Int
-drawBuildingInfo renderer mFont (V2 x y) baseCount count (Building, EntityName name, StorageSpace space, Just request) = do
+drawBuildingInfo renderer mFont (V2 x y) baseCount count (Building _, EntityName name, StorageSpace space, Just request) = do
   if count < baseCount
     then
        case mFont of
@@ -122,7 +125,7 @@ drawBuildingInfo renderer mFont (V2 x y) baseCount count (Building, EntityName n
            pure $ count + 1
          Nothing -> pure count
       else pure count
-drawBuildingInfo renderer mFont (V2 x y) baseCount count (Building, EntityName name, StorageSpace space, Nothing) = do
+drawBuildingInfo renderer mFont (V2 x y) baseCount count (Building _, EntityName name, StorageSpace space, Nothing) = do
   if count < baseCount
     then
        case mFont of
