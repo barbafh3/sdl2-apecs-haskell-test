@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 module Engine.Input (handleInputPayload) where
 
 import Apecs
@@ -6,7 +7,7 @@ import Engine.Components
 import Engine.Constants (defaultRectSizeV2)
 import Control.Monad (when)
 import qualified Control.Monad
-import Engine.DataTypes (DrawLevels (..), EntityState (Idle), ClickState (..))
+import Engine.DataTypes (DrawLevels (..), EntityState (Idle), ClickState (..), StructureState (..))
 import Linear (V2 (V2))
 import Engine.Particles (spawnParticles)
 import Engine.Utils (gget, getRelativeBoxPosition, (<#>))
@@ -44,12 +45,11 @@ handleInputPayload (_ : list) = handleInputPayload list
 
 handleMouseMotionEvent :: MouseMotionEventData -> System' ()
 handleMouseMotionEvent ev = do
-  let (P (V2 mx my)) = mouseMotionEventPos ev
+  let (P mPos) = mouseMotionEventPos ev
   cmapM_ $
     \(Button clicked _ toggled, InterfaceBox bSize, Position pos, Sprite _ size _, button) -> do
-          let intMPos = V2 (fromIntegral mx) (fromIntegral my)
           let box = InteractionBox pos bSize
-          if isInsideInteractionBoxI intMPos box
+          if isInsideInteractionBoxI (fromIntegral <$> mPos) box
              then set button (Button clicked True toggled)
                else set button (Button clicked False toggled)
 
@@ -58,15 +58,17 @@ handleMouseEvent ev =
   case mouseButtonEventMotion ev of
     Pressed -> case mouseButtonEventButton ev of
                  ButtonLeft -> do
-                   (SDL.P (V2 mx my)) <- getAbsoluteMouseLocation
+                   MousePosition mPos <- gget @MousePosition
+                   SelectedConstruction mc <- gget @SelectedConstruction
+                   case mc of
+                     Just ety -> set ety $ Building Construction
+                     Nothing -> return ()
                    cmapM_ $ \(Button cState hover toggled, InterfaceBox bSize, Position pos, Sprite _ size _, button) -> do
                      case cState of
                        Clicked -> set button (Button ClickHeld hover toggled)
                        NotClicked -> do
-                         let intMPos = V2 (fromIntegral mx) (fromIntegral my)
-                         let relativePos = getRelativeBoxPosition (round <$> pos) (round <$> bSize) size
-                         let box = InteractionBox (fromIntegral <#> fst relativePos) bSize
-                         when (isInsideInteractionBoxI intMPos box) $ set button (Button Clicked hover toggled)
+                         let box = InteractionBox pos bSize
+                         when (isInsideInteractionBoxI mPos box) $ set button (Button Clicked hover toggled)
                        _ -> return ()
                  _ -> return()
     Released -> cmapM_ $ 

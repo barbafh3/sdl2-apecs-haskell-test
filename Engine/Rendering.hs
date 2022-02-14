@@ -4,64 +4,101 @@
 
 module Engine.Rendering (draw) where
 
-import Apecs
-import qualified SDL
-import Linear (V2(..), V4(..))
-import Foreign.C.Types
-import Engine.World
-import Engine.Components
-import Colors
-import Engine.Utils (gget, getRelativeBoxPosition)
-import SDL (Texture)
-import SDL.Raw (Color(Color))
-import qualified Data.HashMap.Strict as HM
-import SDL.Font (solid, Color, size, Font)
-import Data.Text (Text, pack)
+import Foreign.C.Types ( CInt )
 import Control.Arrow ((***))
-import SDL.Video (Rectangle(Rectangle))
-import Engine.Constants (pxFontPath, ptsFontPath)
-import qualified SDL.Raw.Primitive as SDL.Primitive
-import qualified SDL.Primitive
+import Data.Text (Text, pack)
+import qualified Data.HashMap.Strict as HM
+import Linear (V2(..), V4(..))
 import Debug.Trace (trace)
-import Engine.DataTypes (ClickState(..))
+import Apecs ( cfoldM, cfoldM_, cmapM_, Not )
+import qualified SDL
+import SDL (Texture, ($=))
+import SDL.Raw (Color(Color))
+import SDL.Font (solid, Color, size, Font)
+import SDL.Video ( Rectangle(Rectangle), textureColorMod )
+import qualified SDL.Primitive
+import Engine.Utils (gget, getRelativeBoxPosition)
+import Engine.Constants (pxFontPath, ptsFontPath)
+import Engine.DataTypes (ClickState(..), StructureState (Placement, Enabled, Construction), GameTextures)
+import Engine.Colors
+    ( black, blackF, blackP, blackPA, blackPA2, brownA, whitePA, background, backgroundA, white, red )
+import Engine.World ( System' )
+import Engine.Components
+    ( Building(..),
+      Button(..),
+      EntityName(..),
+      Fonts(..),
+      HaulRequest,
+      InterfaceBox(InterfaceBox),
+      Particle(Particle),
+      Position(Position),
+      Sprite(Sprite),
+      StorageSpace(..),
+      UIText(UIText), Villager (Villager), MousePosition (MousePosition) )
+import qualified SDL.Raw
+import qualified SDL.Video
+import qualified SDL.Raw.Video
+import Control.Monad.IO.Class (liftIO)
+-- import Data.StateVar (($=))
 
-drawTexture :: SDL.Renderer -> SDL.Texture -> Maybe (SDL.Rectangle CInt) -> Maybe (SDL.Rectangle CInt) -> System' ()
-drawTexture = SDL.copy
-
-draw :: SDL.Renderer -> SDL.Texture -> Int -> System' ()
+draw :: SDL.Renderer -> Texture -> Int -> System' ()
 draw renderer tileset fps = do
-  SDL.rendererDrawColor renderer SDL.$= V4 116 210 102 255
+  SDL.rendererDrawColor renderer SDL.$= backgroundA
   SDL.clear renderer
 
+  drawBuildings renderer tileset
+  drawVillagers renderer tileset
   drawUI renderer tileset
-  drawSprites renderer tileset
 
   SDL.present renderer
 
-drawSprites ::SDL.Renderer -> Texture -> System' ()
-drawSprites renderer tileset =
-  cmapM_ $ \(Position pos, Sprite coord size scale, _ :: Not Button) -> do
-          drawTexture renderer tileset (Just $ SDL.Rectangle (SDL.P coord) size) (Just $ SDL.Rectangle (SDL.P (round <$> pos)) ((* round scale) <$> size))
+drawTexture :: SDL.Renderer -> Texture -> Maybe (SDL.Rectangle CInt) -> Maybe (SDL.Rectangle CInt) -> System' ()
+drawTexture = SDL.copy
 
-black :: SDL.Font.Color
-black = SDL.V4 0 0 0 255
+drawVillagers ::SDL.Renderer -> Texture -> System' ()
+drawVillagers renderer tileset =
+  cmapM_ $
+    \(Position pos, Sprite coord size scale, Villager _) -> do
+      textureColorMod tileset $= white
+      drawTexture
+        renderer
+        tileset
+        (Just $ SDL.Rectangle (SDL.P coord) size)
+        (Just $ SDL.Rectangle (SDL.P (round <$> pos))
+        ((* round scale) <$> size))
 
-blackP :: SDL.Primitive.Color
-blackP = V4 0 0 0 255
+drawBuildings :: SDL.Renderer -> Texture -> System' ()
+drawBuildings renderer tileset = do
+  cmapM_ $
+    \(Position pos, Sprite coord size scale, Building state) -> do
+      case state of
+        Placement -> do
+          textureColorMod tileset $= background
+          drawTexture
+            renderer
+            tileset
+            (Just $ SDL.Rectangle (SDL.P coord) size)
+            (Just $ SDL.Rectangle (SDL.P (round <$> pos))
+            ((* round scale) <$> size))
+        Construction -> do
+          textureColorMod tileset $= white
+          drawTexture
+            renderer
+            tileset
+            (Just $ SDL.Rectangle (SDL.P coord) size)
+            (Just $ SDL.Rectangle (SDL.P (round <$> pos))
+            ((* round scale) <$> size))
+        Enabled -> do
+          textureColorMod tileset $= white
+          drawTexture
+            renderer
+            tileset
+            (Just $ SDL.Rectangle (SDL.P coord) size)
+            (Just $ SDL.Rectangle (SDL.P (round <$> pos))
+            ((* round scale) <$> size))
+        _ -> return ()
 
-blackPA :: SDL.Primitive.Color
-blackPA = V4 0 0 0 178
-
-whitePA :: SDL.Primitive.Color
-whitePA = V4 255 255 255 100
-
-blackPA2 :: SDL.Primitive.Color
-blackPA2 = V4 0 0 0 100
-
-brownA :: SDL.Primitive.Color
-brownA = V4 100 60 2 200
-
-drawUI ::SDL.Renderer -> SDL.Texture -> System' ()
+drawUI :: SDL.Renderer -> Texture -> System' ()
 drawUI renderer tileset = do
   Fonts fonts  <- gget @Fonts
   let mFont = HM.lookup pxFontPath fonts
@@ -77,12 +114,12 @@ drawUI renderer tileset = do
   cfoldM_ (drawBuildingInfo renderer mFont (V2 20 40) buildingCount) 0
   drawParticles renderer
 
-drawUIBoxes :: SDL.Renderer -> SDL.Texture -> System' ()
+drawUIBoxes :: SDL.Renderer -> Texture -> System' ()
 drawUIBoxes renderer tileset = cmapM_ $
   \(Button cState hover toggled, InterfaceBox bSize@(V2 bw bh), Position pos@(V2 x y), Sprite coord size@(V2 sw sh) scale) -> do
       let color = if hover then blackPA2 else blackPA
-      let  color' = case cState of 
-                      Clicked -> blackP 
+      let  color' = case cState of
+                      Clicked -> blackP
                       _ -> color
       drawBox renderer (round <$> pos) (round <$> bSize) ((* round scale) <$> size) color'
       let centerPos = V2 (x + ((bw / 2) - (fromIntegral sw * scale / 2))) (y + ((bh / 2) - (fromIntegral sh * scale / 2)))
@@ -142,7 +179,7 @@ countBuildings count (_, _, _) = pure $ count + 1
 
 drawText :: SDL.Renderer -> Font -> V2 Float -> Text -> System' ()
 drawText renderer font pos text = do
-  textSurf <- solid font black text
+  textSurf <- solid font blackF text
   textTex <- SDL.createTextureFromSurface renderer textSurf
   fontSize <- SDL.Font.size font text
   let (w, h) = (fromIntegral *** fromIntegral) fontSize

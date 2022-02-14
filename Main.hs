@@ -13,7 +13,6 @@ import Engine.World
 import Engine.Components
 import Engine.Step
 import Engine.Rendering
-import Colors
 import Engine.Villagers (spawnHauler)
 import Engine.Buildings (spawnHouse, spawnStorage)
 import Engine.Constants (
@@ -31,6 +30,8 @@ import Engine.Utils (loadFonts, createResourceMap, (<#>))
 import qualified SDL.Font
 import Engine.Particles (spawnParticles)
 import Engine.UI (spawnButton)
+import Engine.Colors (background)
+import SDL.Video (textureColorMod)
 
 main :: IO ()
 main = do

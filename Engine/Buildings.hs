@@ -16,10 +16,11 @@ import Engine.Components
 import Engine.DataTypes
 import Apecs
 import Engine.Constants (haulerCapacity, tileSize, defaultRectSize, defaultRectSizeV2)
-import Engine.Utils (truncate', gget)
+import Engine.Utils (truncate', gget, checkResourceInStorage)
 import Linear (V2(..))
 import Engine.World (System', World)
 import Foreign.C (CInt)
+import Control.Monad (when)
 
 spawnHouse :: V2 Float -> StructureState -> System' Entity
 spawnHouse pos state = do
@@ -53,16 +54,11 @@ updateBuildings dT = do
 emptyStorageList :: StorageList
 emptyStorageList = [("Wood", 0)]
 
-addToStorage :: Maybe StorageItem -> StorageList -> StorageList
-addToStorage Nothing [] = []
-addToStorage (Just item) [] = [item]
-addToStorage (Just item) [pair]
-    | fst pair == fst item = [(fst pair, snd pair + snd item)]
-    | otherwise = [pair]
-addToStorage (Just item) (pair : list)
-    | fst pair == fst item = (fst pair, snd pair + snd item) : addToStorage (Just item) list
-    | otherwise = addToStorage (Just item) list
-addToStorage Nothing (pair : list) = pair : list
+addToStorage :: StorageItem -> StorageList -> StorageList
+addToStorage item [] = [item]
+addToStorage item (pair : list)
+    | fst pair == fst item = (fst pair, snd pair + snd item) : addToStorage item list
+    | otherwise = addToStorage item list
 
 removeFromStorage :: Maybe StorageItem -> StorageList -> StorageList
 removeFromStorage Nothing [] = []
@@ -93,16 +89,15 @@ resourceCount resource (pair : list)
     | fst pair == resource = snd pair + resourceCount resource list
     | otherwise = resourceCount resource list
 
-
 followMouseCursor :: System' ()
 followMouseCursor = do
-  cmapM $ \(Building state, Position pos, building) -> do
+  cmapM $ \(Building state, building) -> do
     case state of
       Placement -> do
-        MousePosition mPos <- gget @MousePosition
-        liftIO $ print $ "following mouse - mPos: " ++ show mPos
-        (InteractionBox ibPos ibSize, BoundingBox bbPos bbSize) <- get building 
-        set building (Position mPos, InteractionBox mPos ibSize, BoundingBox mPos bbSize)
+        MousePosition mPos@(V2 mx my) <- gget @MousePosition
+        (InteractionBox ibPos ibSize, BoundingBox bbPos bbSize, Sprite _ (V2 sw sh) _) <- get building
+        let pos = V2 (mx - (fromIntegral sw / 2)) (my - (fromIntegral sh / 2))
+        set building (Position pos, InteractionBox pos ibSize, BoundingBox pos bbSize)
       _ -> return ()
 
 
@@ -113,7 +108,8 @@ runBuildingTask = cmapM_ $
       Construction -> do
         let haulerCount = round $ (fromIntegral requiredamount :: Float) / haulerCapacity
         let (Entity ety) = building
-        cfoldM_ (requestHaulers (HaulTask (resource, ceiling haulerCapacity) 4 ety) building) haulerCount
+        -- cfoldM_ (requestHaulers (HaulTask (resource, ceiling haulerCapacity) 4 ety) building) haulerCount
+        cfoldM_ (findStorageAndRequestHaulers building haulerCount resource) 1
       _ -> return ()
 
 requestHaulers :: HaulTask -> Entity -> Int -> (Villager, Entity) -> System' Int
@@ -132,3 +128,16 @@ requestHaulers haul building remainingSpots (Villager state, villager) =
             Left $ HaulRequest (resource,  requiredAmount) new_amount
         pure (remainingSpots - 1)
       _ -> pure remainingSpots
+
+
+findStorageAndRequestHaulers :: Entity -> Int -> String -> Int -> (StorageSpace, Entity) -> System' Int
+findStorageAndRequestHaulers building@(Entity ety) haulerCount resource count (StorageSpace s, Entity st) = do
+  liftIO $ print $ "Building: " ++ show (checkResourceInStorage s (resource, round haulerCapacity))
+  liftIO $ print $ "Count: " ++ show count
+  if count == 1 && checkResourceInStorage s (resource, round haulerCapacity)
+    then do
+        liftIO $ print "Requesting haulers..."
+        cfoldM_ (requestHaulers (HaulTask (resource, ceiling haulerCapacity) st ety) building) haulerCount
+        pure 0
+      else pure count
+

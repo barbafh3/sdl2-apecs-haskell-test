@@ -1,11 +1,12 @@
 module Engine.DataTypes (
     StorageItem(..), StorageList(..), DrawLevels(..), EntityState(..),
     FontMap, FontResource, Hover, Clicked, Toggled, Offset, ClickState(..),
-    StructureState(..)
+    StructureState(..), GameTextures(..)
 ) where
 import SDL.Font (Font)
 import qualified Data.HashMap.Strict as HM
 import Foreign.C.Types (CInt)
+import qualified SDL
 
 type Hover = Bool
 type Clicked = Bool
@@ -27,4 +28,6 @@ type FontMap = HM.HashMap String Font
 data ClickState = Clicked | ClickReleased | ClickHeld | NotClicked deriving Show
 
 data StructureState = Placement | Construction | Enabled | Disabled deriving Show
+
+type GameTextures = (SDL.Texture, SDL.Texture, SDL.Texture)
 

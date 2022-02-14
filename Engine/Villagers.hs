@@ -14,7 +14,7 @@ import Engine.Components
 import System.Random
 import Linear (V2(V2))
 import Apecs
-import Engine.Utils (vectorLength, normalizeVector, normalizeVectorF, vectorLengthF)
+import Engine.Utils (vectorLength, normalizeVector, normalizeVectorF, vectorLengthF, checkResourceInStorage)
 import Debug.Trace (trace)
 import Engine.DataTypes(EntityState(..))
 import qualified Control.Monad
@@ -142,7 +142,11 @@ checkPickupDestination = cmapM $
   \(Villager state, HaulTask item orig dest, TargetPosition target) ->
     if state == Loading 
       then get (Entity orig) >>= \case
-          Just (Building _, Position pos) -> return (Villager state, TargetPosition pos)
+          Just (Building _, StorageSpace s, Position bPos) -> do 
+            liftIO $ print $ show $ checkResourceInStorage s item
+            if checkResourceInStorage s item
+               then return (Villager state, TargetPosition bPos)
+                 else return (Villager Idle, TargetPosition target)
           Nothing -> return (Villager Idle, TargetPosition target)
         else return (Villager state, TargetPosition target)
 
@@ -152,8 +156,11 @@ reachedDeliveryDestination = cmapM_ $
       (buildingBox, StorageSpace storage) <- get (Entity dest)
       (Villager state, villagerBox, IdleMovement radius baseT _, Backpack bMItem) <- get villager
       when (areBoxesColliding buildingBox villagerBox) $ do
-        set (Entity dest) $ StorageSpace $ addToStorage bMItem storage
-        set villager (Villager Idle, Backpack Nothing, IdleMovement radius baseT 0.0, Nothing :: (Maybe HaulTask))
+        case bMItem of
+          Just bItem -> do
+            set (Entity dest) $ StorageSpace $ addToStorage bItem storage
+            set villager (Villager Idle, Backpack Nothing, IdleMovement radius baseT 0.0, Nothing :: (Maybe HaulTask))
+          Nothing -> return ()
 
 reachedPickupDestination :: System' ()
 reachedPickupDestination = cmapM_ $
