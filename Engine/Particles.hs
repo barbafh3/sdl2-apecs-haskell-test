@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeApplications           #-}
 {-# LANGUAGE TypeFamilies               #-}
 
-module Engine.Particles (spawnParticles, stepParticles, stepParticlePositions) where
+module Engine.Particles (spawnParticles, updateParticles, updateParticlePositions) where
 
 import Engine.Components
 import Linear
@@ -31,8 +31,8 @@ spawnParticles amount = do
     t  <- liftIO $ randomRIO (10, 14)
     newEntity (Particle t, Position (V2 x y), Velocity (V2 vx vy))
 
-stepParticles :: Float -> System' ()
-stepParticles dT = cmap $ \(Particle t) ->
+updateParticles :: Float -> System' ()
+updateParticles dT = cmap $ \(Particle t) ->
   if t < 0
      then Right $ Not @(Particle, Kinetic)
      else Left  $ Particle (t - 0.1)
@@ -41,6 +41,6 @@ stepParticles dT = cmap $ \(Particle t) ->
 gget :: forall c w m . (Has w m c, Apecs.Core.ExplGet m (Storage c)) => SystemT w m c
 gget = Apecs.get global
 
-stepParticlePositions :: Float -> System' ()
-stepParticlePositions dT = cmap $ \(Particle t, Position p, Velocity (V2 vx vy)) -> (Position (p + V2 vx vy), Velocity (V2 vx (vy + 0.1)))
+updateParticlePositions :: Float -> System' ()
+updateParticlePositions dT = cmap $ \(Particle t, Position p, Velocity (V2 vx vy)) -> (Position (p + V2 vx vy), Velocity (V2 vx (vy + 0.1)))
 

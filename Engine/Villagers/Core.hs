@@ -1,46 +1,24 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase     #-}
 
-module Engine.Villagers (
+module Engine.Villagers.Core (
   idleTick,
   checkIdleTimer,
   moveToTarget,
   updateVillagerCollisions,
   updateVillagers,
-  spawnHauler
 ) where
 
 import Engine.Components
 import System.Random
 import Linear (V2(V2))
 import Apecs
-import Engine.Utils (vectorLength, normalizeVector, normalizeVectorF, vectorLengthF, checkResourceInStorage)
-import Debug.Trace (trace)
+import Engine.Utils (normalizeVectorF, vectorLengthF)
 import Engine.DataTypes(EntityState(..))
-import qualified Control.Monad
-import Engine.Buildings (addToStorage, removeFromStorage)
-import Data.Maybe (isNothing, isJust)
+import Engine.Buildings.Storage (addToStorage, removeFromStorage, checkResourceInStorage)
 import Engine.Collisions (areBoxesColliding)
 import Control.Monad (when, unless)
-import Data.Foldable (forM_)
-import Engine.Constants (tileSize, defaultRectSize)
 import Engine.World (System')
-import Foreign.C (CInt)
-
-spawnHauler :: V2 Float -> V2 Float -> V2 Float -> System' ()
-spawnHauler pos idlePoint vel = do
-  newEntity (
-    Hauler,
-    (Villager Idle,
-    (Backpack Nothing,
-    (BoundingBox pos (V2 8 8),
-    (IdleMovement 20 3.0 0.0,
-    (IdlePoint idlePoint,
-    (Position pos,
-    (Velocity vel,
-    (Sprite (V2 (6 * tileSize) (12 * tileSize)) defaultRectSize 1,
-    TargetPosition (V2 0 0))))))))))
-  return ()
 
 updateVillagers :: Float ->  System' ()
 updateVillagers dT = do
@@ -143,7 +121,6 @@ checkPickupDestination = cmapM $
     if state == Loading 
       then get (Entity orig) >>= \case
           Just (Building _, StorageSpace s, Position bPos) -> do 
-            liftIO $ print $ show $ checkResourceInStorage s item
             if checkResourceInStorage s item
                then return (Villager state, TargetPosition bPos)
                  else return (Villager Idle, TargetPosition target)

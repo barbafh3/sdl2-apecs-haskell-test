@@ -11,10 +11,10 @@ import qualified SDL.Image
 import qualified SDL.Framerate as Frames
 import Engine.World
 import Engine.Components
-import Engine.Step
+import Engine.Update
 import Engine.Rendering
-import Engine.Villagers (spawnHauler)
-import Engine.Buildings (spawnHouse, spawnStorage)
+import Engine.Villagers.Spawn (spawnHauler)
+import Engine.Buildings.Spawn (spawnPlacedHouse, spawnStorage)
 import Engine.Constants (
   tileSize, 
   defaultRectSize, 
@@ -58,6 +58,7 @@ main = do
   tileset <- SDL.Image.loadTexture renderer tilesetPath
   putStrLn "Main: Tileset loaded"
   runSystem (initializeGame rng) world
+  putStrLn "Main: World generated"
 
   let loop prevTicks secondTick fpsAcc prevFps = do
         ticks <- SDL.ticks
@@ -94,7 +95,7 @@ initializeGame :: StdGen ->  System' ()
 initializeGame rng = do
   spawnHauler (V2 680 300) (V2 640 450) (V2 100 100)
   spawnHauler (V2 600 100) (V2 640 450) (V2 100 100)
-  spawnHouse (V2 1000 200) Construction
+  spawnPlacedHouse (V2 1000 200)
   newEntity (
       Building Enabled,
       EntityName "Idle Point",

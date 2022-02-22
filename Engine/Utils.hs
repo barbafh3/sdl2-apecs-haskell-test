@@ -7,7 +7,7 @@ module Engine.Utils (
     vectorLength, normalizeVector, 
     vectorLengthF, normalizeVectorF, 
     gget, truncate', loadFonts, createResourceMap,
-    getRelativeBoxPosition, checkResourceInStorage
+    getRelativeBoxPosition
 ) where
 
 import Apecs (get, global)
@@ -79,13 +79,3 @@ getRelativeBoxPosition (V2 x y) (V2 w h) (V2 sw sh) = (pos1, pos2)
 -- | Maps the function to the values of a V2 CInt, returning a V2 Float
 (<#>) :: (CInt -> Float) -> V2 CInt -> V2 Float
 f <#> (V2 x y) = V2 (f x) (f y)
-
-checkResourceInStorage :: StorageList -> StorageItem -> Bool
-checkResourceInStorage [] _ = False
-checkResourceInStorage [(sResource, sAmount)] (resource, amount) 
-  | sResource == resource && sAmount >= amount = True
-  | otherwise = False
-checkResourceInStorage ((sResource, sAmount) : list) item@(resource, amount) 
-  | sResource == resource && sAmount >= amount = True
-  | sResource == resource && sAmount < amount = False
-  | otherwise = checkResourceInStorage list item

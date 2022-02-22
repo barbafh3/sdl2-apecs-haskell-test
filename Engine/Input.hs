@@ -2,16 +2,16 @@
 module Engine.Input (handleInputPayload) where
 
 import Apecs
-import Engine.Collisions (isInsideInteractionBox, isInsideBoundingBox, isInsideInteractionBoxI)
+import Engine.Collisions (isInsideInteractionBox, isInsideBoundingBox, isInsideInteractionBoxI, areBoxesColliding)
 import Engine.Components
 import Engine.Constants (defaultRectSizeV2)
-import Control.Monad (when)
+import Control.Monad (when, unless)
 import qualified Control.Monad
 import Engine.DataTypes (DrawLevels (..), EntityState (Idle), ClickState (..), StructureState (..))
 import Linear (V2 (V2))
 import Engine.Particles (spawnParticles)
 import Engine.Utils (gget, getRelativeBoxPosition, (<#>))
-import Engine.Buildings (requestHaulers)
+import Engine.Buildings.Tasks (requestHaulers)
 import Engine.World (System')
 import SDL (
   EventPayload (KeyboardEvent, MouseMotionEvent),
@@ -19,7 +19,7 @@ import SDL (
   KeyboardEventData,
   MouseMotionEventData (mouseMotionEventPos),
   InputMotion (Pressed, Released),
-  getAbsoluteMouseLocation, Point (P))
+  getAbsoluteMouseLocation, Point (P), MouseButton (ButtonRight))
 import SDL.Event
     ( EventPayload(MouseButtonEvent, MouseMotionEvent),
       MouseButtonEventData(mouseButtonEventButton),
@@ -53,15 +53,44 @@ handleMouseMotionEvent ev = do
              then set button (Button clicked True toggled)
                else set button (Button clicked False toggled)
 
+
+checkClick :: Entity -> Int -> (Building, BoundingBox, Entity) -> System' Int
+checkClick ety count (_, box, building) = do
+    if count == 0
+       then do
+         liftIO $ print "Click check ended"
+         pure 0
+       else do
+         when (ety /= building) $ do
+              bBox <- get ety
+              liftIO $ print $ show bBox
+              liftIO $ print $ show box
+              unless (areBoxesColliding bBox box) $ do
+                 set ety $ Building Construction
+                 set global $ SelectedConstruction Nothing
+         pure 0
+
+checkClick2 :: Entity -> System' ()
+checkClick2 ety = do
+  cmapM_ $ 
+    \(Building _, box, building) -> do
+      bBox <- get ety
+      when (ety /= building) $ do
+        unless (areBoxesColliding bBox box) $ do
+          set ety $ Building Construction
+          set global $ SelectedConstruction Nothing
+
 handleMouseEvent :: MouseButtonEventData -> System' ()
 handleMouseEvent ev =
   case mouseButtonEventMotion ev of
     Pressed -> case mouseButtonEventButton ev of
                  ButtonLeft -> do
                    MousePosition mPos <- gget @MousePosition
-                   SelectedConstruction mc <- gget @SelectedConstruction
-                   case mc of
-                     Just ety -> set ety $ Building Construction
+                   SelectedConstruction msc <- gget @SelectedConstruction
+                   case msc of
+                     Just ety -> do
+                       checkClick2 ety
+                       -- cfoldM_ (checkClick ety) 1
                      Nothing -> return ()
                    cmapM_ $ \(Button cState hover toggled, InterfaceBox bSize, Position pos, Sprite _ size _, button) -> do
                      case cState of
@@ -70,9 +99,16 @@ handleMouseEvent ev =
                          let box = InteractionBox pos bSize
                          when (isInsideInteractionBoxI mPos box) $ set button (Button Clicked hover toggled)
                        _ -> return ()
+                 ButtonRight -> do
+                   SelectedConstruction msc <- gget @SelectedConstruction
+                   case msc of
+                     Just ety -> do
+                       destroy ety (Proxy @PlacementHouse)
+                       set global $ SelectedConstruction Nothing
+                     Nothing -> return ()
                  _ -> return()
-    Released -> cmapM_ $ 
-      \(Button cState hover toggled, button) -> 
+    Released -> cmapM_ $
+      \(Button cState hover toggled, button) ->
         case cState of
           ClickReleased -> set button $ Button NotClicked hover toggled
           _ -> set button $ Button ClickReleased hover toggled

@@ -10,7 +10,7 @@ import Data.Text (Text, pack)
 import qualified Data.HashMap.Strict as HM
 import Linear (V2(..), V4(..))
 import Debug.Trace (trace)
-import Apecs ( cfoldM, cfoldM_, cmapM_, Not )
+import Apecs ( cfoldM, cfoldM_, cmapM_, Not, get )
 import qualified SDL
 import SDL (Texture, ($=))
 import SDL.Raw (Color(Color))
@@ -39,6 +39,10 @@ import qualified SDL.Raw
 import qualified SDL.Video
 import qualified SDL.Raw.Video
 import Control.Monad.IO.Class (liftIO)
+import Apecs.Core (Entity)
+import Apecs.Core (Entity(Entity))
+import Engine.Collisions (areBoxesColliding)
+import Control.Monad (when)
 -- import Data.StateVar (($=))
 
 draw :: SDL.Renderer -> Texture -> Int -> System' ()
@@ -67,13 +71,21 @@ drawVillagers renderer tileset =
         (Just $ SDL.Rectangle (SDL.P (round <$> pos))
         ((* round scale) <$> size))
 
+checkPlacementCollision :: Entity -> Texture -> System' ()
+checkPlacementCollision ety@(Entity eEty) tileset = do
+  (Position ePos, eBox) <- get ety
+  cmapM_ $
+    \(Building _, Position pos, box, Entity bEty) -> do
+      when (areBoxesColliding eBox box && (eEty /= bEty)) $ textureColorMod tileset $= red
+
 drawBuildings :: SDL.Renderer -> Texture -> System' ()
 drawBuildings renderer tileset = do
   cmapM_ $
-    \(Position pos, Sprite coord size scale, Building state) -> do
+    \(Position pos, Sprite coord size scale, Building state, building) -> do
       case state of
         Placement -> do
           textureColorMod tileset $= background
+          checkPlacementCollision building tileset
           drawTexture
             renderer
             tileset

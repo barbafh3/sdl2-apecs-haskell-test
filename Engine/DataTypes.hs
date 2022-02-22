@@ -14,7 +14,7 @@ type Toggled = Bool
 
 type Offset = CInt
 
-type StorageItem = (String, Int)
+type StorageItem = (String, Int) 
 
 type StorageList = [StorageItem]
 

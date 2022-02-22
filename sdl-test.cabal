@@ -18,21 +18,25 @@ extra-source-files:  CHANGELOG.md
 
 executable sdl-test
   main-is:             Main.hs
-  other-modules:       Engine.Villagers
-                       Engine.Components
-                       Engine.Utils
-                       Engine.DataTypes
-                       Engine.Buildings
-                       Engine.Constants
-                       Engine.World
+  other-modules:       Engine.Buildings.Core
+                       Engine.Buildings.Storage
+                       Engine.Buildings.Spawn
+                       Engine.Buildings.Tasks
                        Engine.Collisions
-                       Engine.Rendering
-                       Engine.Step
-                       Engine.Particles
-                       Engine.Input
-                       Engine.Utils
-                       Engine.UI
                        Engine.Colors
+                       Engine.Components
+                       Engine.Constants
+                       Engine.DataTypes
+                       Engine.Input
+                       Engine.Particles
+                       Engine.Rendering
+                       Engine.UI
+                       Engine.Update
+                       Engine.Utils
+                       Engine.Utils
+                       Engine.Villagers.Core
+                       Engine.Villagers.Spawn
+                       Engine.World
   -- other-extensions:
   -- build-depends:       base >=4.14 && <4.15
   build-depends:       base

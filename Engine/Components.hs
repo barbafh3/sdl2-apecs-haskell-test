@@ -19,6 +19,7 @@ module Engine.Components(
     Sprite(..), UIText(..), Fonts(..),
     Button(..), InterfaceBox(..),
     HouseButton(..), SelectedConstruction(..),
+    ConstructionMaterials(..), PlacementHouse(..)
 ) where
 import Apecs
 import Linear
@@ -57,6 +58,11 @@ instance Component Building where type Storage Building = Map Building
 
 newtype StorageSpace = StorageSpace StorageList deriving Show
 instance Component StorageSpace where type Storage StorageSpace = Map StorageSpace
+
+data ConstructionMaterials = ConstructionMaterials StorageList StorageList deriving Show
+instance Component ConstructionMaterials where type Storage ConstructionMaterials = Map ConstructionMaterials
+
+type PlacementHouse = (Building, EntityName, HaulRequest, Sprite, StorageSpace, BoundingBox, InteractionBox, Position)
 
 ------------------------- CORE -----------------------------
 

@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
-module Engine.UI (spawnButton, stepUI) where
+module Engine.UI (spawnButton, updateUI) where
 import Linear (V2)
 import Engine.World (System')
 import Engine.Components
@@ -11,12 +11,12 @@ import Foreign.C (CInt)
 import Engine.DataTypes (ClickState(..), StructureState (Placement))
 import Control.Monad.IO.Class
 import Apecs.System
-import Engine.Buildings (spawnHouse)
+import Engine.Buildings.Spawn (spawnHouseConstruction)
 import Apecs.Util (global)
 import Apecs.Core (Entity(Entity))
 
-stepUI :: Float -> System' ()
-stepUI dT = do
+updateUI :: Float -> System' ()
+updateUI dT = do
   houseButtonClicked
 
 spawnButton :: V2 Float -> (CInt, CInt) -> V2 Float -> Float ->  System' ()
@@ -40,7 +40,7 @@ houseButtonClicked = cmapM_ $
         SelectedConstruction mEty <- gget @SelectedConstruction
         case mEty of
           Nothing -> do
-            ety <- spawnHouse mPos Placement 
+            ety <- spawnHouseConstruction mPos
             set global $ SelectedConstruction $ Just ety
           Just _ -> return ()
       _ -> return ()
