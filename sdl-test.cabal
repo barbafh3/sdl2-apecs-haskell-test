@@ -36,6 +36,7 @@ executable sdl-test
                        Engine.Utils
                        Engine.Villagers.Core
                        Engine.Villagers.Spawn
+                       Engine.Villagers.Tasks
                        Engine.World
   -- other-extensions:
   -- build-depends:       base >=4.14 && <4.15

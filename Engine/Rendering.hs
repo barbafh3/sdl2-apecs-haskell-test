@@ -34,13 +34,12 @@ import Engine.Components
       Position(Position),
       Sprite(Sprite),
       StorageSpace(..),
-      UIText(UIText), Villager (Villager), MousePosition (MousePosition) )
+      UIText(UIText), Villager (Villager), MousePosition (MousePosition), ConstructionStorage (ConstructionStorage) )
 import qualified SDL.Raw
 import qualified SDL.Video
 import qualified SDL.Raw.Video
 import Control.Monad.IO.Class (liftIO)
-import Apecs.Core (Entity)
-import Apecs.Core (Entity(Entity))
+import Apecs.Core ( Entity, Entity(Entity) )
 import Engine.Collisions (areBoxesColliding)
 import Control.Monad (when)
 -- import Data.StateVar (($=))
@@ -161,9 +160,9 @@ drawBuildingInfo :: SDL.Renderer ->
   V2 Float ->
   Int ->
   Int ->
-  (Building, EntityName, StorageSpace, Maybe HaulRequest) ->
+  (Building, EntityName, ConstructionStorage, Maybe HaulRequest) ->
   System' Int
-drawBuildingInfo renderer mFont (V2 x y) baseCount count (Building _, EntityName name, StorageSpace space, Just request) = do
+drawBuildingInfo renderer mFont (V2 x y) baseCount count (Building _, EntityName name, ConstructionStorage space, Just request) = do
   if count < baseCount
     then
        case mFont of
@@ -174,7 +173,7 @@ drawBuildingInfo renderer mFont (V2 x y) baseCount count (Building _, EntityName
            pure $ count + 1
          Nothing -> pure count
       else pure count
-drawBuildingInfo renderer mFont (V2 x y) baseCount count (Building _, EntityName name, StorageSpace space, Nothing) = do
+drawBuildingInfo renderer mFont (V2 x y) baseCount count (Building _, EntityName name, ConstructionStorage space, Nothing) = do
   if count < baseCount
     then
        case mFont of
@@ -186,7 +185,7 @@ drawBuildingInfo renderer mFont (V2 x y) baseCount count (Building _, EntityName
          Nothing -> pure count
       else pure count
 
-countBuildings :: Int -> (Building, EntityName, StorageSpace) -> System' Int
+countBuildings :: Int -> (Building, EntityName, ConstructionStorage) -> System' Int
 countBuildings count (_, _, _) = pure $ count + 1
 
 drawText :: SDL.Renderer -> Font -> V2 Float -> Text -> System' ()

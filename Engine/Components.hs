@@ -19,7 +19,8 @@ module Engine.Components(
     Sprite(..), UIText(..), Fonts(..),
     Button(..), InterfaceBox(..),
     HouseButton(..), SelectedConstruction(..),
-    ConstructionMaterials(..), PlacementHouse(..)
+    ConstructionMaterials(..), PlacementHouse(..),
+    ConstructionStorage(..),
 ) where
 import Apecs
 import Linear
@@ -58,6 +59,9 @@ instance Component Building where type Storage Building = Map Building
 
 newtype StorageSpace = StorageSpace StorageList deriving Show
 instance Component StorageSpace where type Storage StorageSpace = Map StorageSpace
+
+newtype ConstructionStorage = ConstructionStorage StorageList deriving Show
+instance Component ConstructionStorage where type Storage ConstructionStorage = Map ConstructionStorage
 
 data ConstructionMaterials = ConstructionMaterials StorageList StorageList deriving Show
 instance Component ConstructionMaterials where type Storage ConstructionMaterials = Map ConstructionMaterials
@@ -123,7 +127,7 @@ instance Component HouseButton where type Storage HouseButton = Map HouseButton
 
 ------------------------- TASKS ----------------------------
 
-data HaulRequest = HaulRequest StorageItem Int deriving Show
+newtype HaulRequest = HaulRequest StorageList deriving Show
 instance Component HaulRequest where type Storage HaulRequest = Map HaulRequest
 
 data ConstructRequest = ConstructRequest deriving Show

@@ -14,7 +14,7 @@ import Engine.Components
 import Engine.Update
 import Engine.Rendering
 import Engine.Villagers.Spawn (spawnHauler)
-import Engine.Buildings.Spawn (spawnPlacedHouse, spawnStorage)
+import Engine.Buildings.Spawn (spawnFinishedHouse, spawnFinishedStorage)
 import Engine.Constants (
   tileSize, 
   defaultRectSize, 
@@ -95,7 +95,7 @@ initializeGame :: StdGen ->  System' ()
 initializeGame rng = do
   spawnHauler (V2 680 300) (V2 640 450) (V2 100 100)
   spawnHauler (V2 600 100) (V2 640 450) (V2 100 100)
-  spawnPlacedHouse (V2 1000 200)
+  spawnFinishedHouse (V2 1000 200)
   newEntity (
       Building Enabled,
       EntityName "Idle Point",
@@ -103,7 +103,7 @@ initializeGame rng = do
       BoundingBox (V2 640 450) (V2 8 8),
       InteractionBox (V2 640 450) defaultRectSizeV2,
       Position $ V2 640 450)
-  spawnStorage (V2 300 500) [("Wood", 100)] Enabled
+  spawnFinishedStorage (V2 300 500) [("Wood", 100)] Enabled
   spawnButton (V2 50 800) (1, 2) (V2 24 24) 2
   newEntity $ Rng rng
   newEntity $ DrawLevel Debug

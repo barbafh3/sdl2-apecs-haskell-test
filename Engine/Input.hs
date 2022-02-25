@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
+
 module Engine.Input (handleInputPayload) where
 
 import Apecs
@@ -10,7 +11,7 @@ import qualified Control.Monad
 import Engine.DataTypes (DrawLevels (..), EntityState (Idle), ClickState (..), StructureState (..))
 import Linear (V2 (V2))
 import Engine.Particles (spawnParticles)
-import Engine.Utils (gget, getRelativeBoxPosition, (<#>))
+import Engine.Utils (gget, getRelativeBoxPosition, (<#>), cfoldMap)
 import Engine.Buildings.Tasks (requestHaulers)
 import Engine.World (System')
 import SDL (
@@ -25,6 +26,8 @@ import SDL.Event
       MouseButtonEventData(mouseButtonEventButton),
       MouseButton(ButtonLeft),
       MouseButtonEventData(mouseButtonEventPos) )
+import Data.Monoid (getAny)
+import Data.Semigroup (Any(Any))
 
 handleInputPayload :: [EventPayload] -> System' ()
 handleInputPayload [] = return ()
@@ -53,59 +56,12 @@ handleMouseMotionEvent ev = do
              then set button (Button clicked True toggled)
                else set button (Button clicked False toggled)
 
-
-checkClick :: Entity -> Int -> (Building, BoundingBox, Entity) -> System' Int
-checkClick ety count (_, box, building) = do
-    if count == 0
-       then do
-         liftIO $ print "Click check ended"
-         pure 0
-       else do
-         when (ety /= building) $ do
-              bBox <- get ety
-              liftIO $ print $ show bBox
-              liftIO $ print $ show box
-              unless (areBoxesColliding bBox box) $ do
-                 set ety $ Building Construction
-                 set global $ SelectedConstruction Nothing
-         pure 0
-
-checkClick2 :: Entity -> System' ()
-checkClick2 ety = do
-  cmapM_ $ 
-    \(Building _, box, building) -> do
-      bBox <- get ety
-      when (ety /= building) $ do
-        unless (areBoxesColliding bBox box) $ do
-          set ety $ Building Construction
-          set global $ SelectedConstruction Nothing
-
 handleMouseEvent :: MouseButtonEventData -> System' ()
 handleMouseEvent ev =
   case mouseButtonEventMotion ev of
     Pressed -> case mouseButtonEventButton ev of
-                 ButtonLeft -> do
-                   MousePosition mPos <- gget @MousePosition
-                   SelectedConstruction msc <- gget @SelectedConstruction
-                   case msc of
-                     Just ety -> do
-                       checkClick2 ety
-                       -- cfoldM_ (checkClick ety) 1
-                     Nothing -> return ()
-                   cmapM_ $ \(Button cState hover toggled, InterfaceBox bSize, Position pos, Sprite _ size _, button) -> do
-                     case cState of
-                       Clicked -> set button (Button ClickHeld hover toggled)
-                       NotClicked -> do
-                         let box = InteractionBox pos bSize
-                         when (isInsideInteractionBoxI mPos box) $ set button (Button Clicked hover toggled)
-                       _ -> return ()
-                 ButtonRight -> do
-                   SelectedConstruction msc <- gget @SelectedConstruction
-                   case msc of
-                     Just ety -> do
-                       destroy ety (Proxy @PlacementHouse)
-                       set global $ SelectedConstruction Nothing
-                     Nothing -> return ()
+                 ButtonLeft -> handleLeftMousePress
+                 ButtonRight -> handdleRightMousePress
                  _ -> return()
     Released -> cmapM_ $
       \(Button cState hover toggled, button) ->
@@ -113,6 +69,34 @@ handleMouseEvent ev =
           ClickReleased -> set button $ Button NotClicked hover toggled
           _ -> set button $ Button ClickReleased hover toggled
 
+handleLeftMousePress = do
+   MousePosition mPos <- gget @MousePosition
+   SelectedConstruction msc <- gget @SelectedConstruction
+   case msc of
+     Just ety -> do
+       bBox <- get ety
+       isColliding <- fmap getAny $ cfoldMap $ 
+         \(Building _, box, building) -> do
+           Any $ (ety /= building) && areBoxesColliding bBox box
+       unless isColliding $ do
+         set ety $ Building Construction
+         set global $ SelectedConstruction Nothing
+     Nothing -> return ()
+   cmapM_ $ \(Button cState hover toggled, InterfaceBox bSize, Position pos, Sprite _ size _, button) -> do
+     case cState of
+       Clicked -> set button (Button ClickHeld hover toggled)
+       NotClicked -> do
+         let box = InteractionBox pos bSize
+         when (isInsideInteractionBoxI mPos box) $ set button (Button Clicked hover toggled)
+       _ -> return ()
+
+handdleRightMousePress = do
+   SelectedConstruction msc <- gget @SelectedConstruction
+   case msc of
+     Just ety -> do
+       destroy ety (Proxy @PlacementHouse)
+       set global $ SelectedConstruction Nothing
+     Nothing -> return ()
 
 
 handleKeyboardEvent :: KeyboardEventData -> System' ()

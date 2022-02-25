@@ -7,7 +7,7 @@ module Engine.Utils (
     vectorLength, normalizeVector, 
     vectorLengthF, normalizeVectorF, 
     gget, truncate', loadFonts, createResourceMap,
-    getRelativeBoxPosition
+    getRelativeBoxPosition, cfoldMap
 ) where
 
 import Apecs (get, global)
@@ -18,6 +18,7 @@ import Foreign.C (CInt)
 import SDL.Font (PointSize, load)
 import Engine.DataTypes (FontResource, StorageList, StorageItem)
 import Data.HashMap.Strict (insert, empty, HashMap)
+import Apecs.System (cfold)
 
 sumV2 :: V2 CInt -> Float
 sumV2 (V2 x y) = fromIntegral (x + y)
@@ -79,3 +80,6 @@ getRelativeBoxPosition (V2 x y) (V2 w h) (V2 sw sh) = (pos1, pos2)
 -- | Maps the function to the values of a V2 CInt, returning a V2 Float
 (<#>) :: (CInt -> Float) -> V2 CInt -> V2 Float
 f <#> (V2 x y) = V2 (f x) (f y)
+
+cfoldMap :: forall w m c a . Members w m c => Get w m c => Monoid a => (c -> a) -> SystemT w m a 
+cfoldMap f = cfold (\acc c -> mappend acc (f c)) mempty

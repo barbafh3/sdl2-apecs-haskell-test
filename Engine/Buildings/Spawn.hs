@@ -2,7 +2,7 @@ module Engine.Buildings.Spawn (
     spawnFinishedHouse,
     spawnHouseConstruction,
     spawnPlacedHouse,
-    spawnStorage
+    spawnFinishedStorage
     ) where
 import Linear (V2)
 import Engine.World (System')
@@ -17,9 +17,7 @@ spawnFinishedHouse pos = do
   newEntity (
       Building Enabled,
       EntityName "House",
-      HaulRequest ("Wood", 60) 0,
       Sprite (V2 (1 * tileSize) (2 * tileSize)) defaultRectSize 1,
-      StorageSpace [],
       BoundingBox pos defaultRectSizeV2,
       InteractionBox pos defaultRectSizeV2,
       Position pos)
@@ -29,9 +27,9 @@ spawnPlacedHouse pos = do
   newEntity (
       Building Construction,
       EntityName "House",
-      HaulRequest ("Wood", 60) 0,
+      HaulRequest [("Wood", 60)],
       Sprite (V2 (1 * tileSize) (2 * tileSize)) defaultRectSize 1,
-      StorageSpace [],
+      ConstructionStorage [],
       BoundingBox pos defaultRectSizeV2,
       InteractionBox pos defaultRectSizeV2,
       Position pos)
@@ -41,16 +39,16 @@ spawnHouseConstruction pos = do
   newEntity (
       Building Placement,
       (EntityName "House",
-      HaulRequest ("Wood", 60) 0,
+      HaulRequest [("Wood", 60)],
       Sprite (V2 (1 * tileSize) (2 * tileSize)) defaultRectSize 1,
-      StorageSpace [],
+      ConstructionStorage [],
       ConstructionMaterials [("Wood", 60)] [],
       BoundingBox pos defaultRectSizeV2,
       InteractionBox pos defaultRectSizeV2,
       Position pos))
 
-spawnStorage :: V2 Float -> [StorageItem] -> StructureState -> System' ()
-spawnStorage pos storage state = do
+spawnFinishedStorage :: V2 Float -> [StorageItem] -> StructureState -> System' ()
+spawnFinishedStorage pos storage state = do
   newEntity (
       Building state,
       EntityName "Storage",

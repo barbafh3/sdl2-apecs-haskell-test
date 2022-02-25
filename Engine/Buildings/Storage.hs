@@ -13,8 +13,11 @@ emptyStorageList = [("Wood", 0)]
 
 addToStorage :: StorageItem -> StorageList -> StorageList
 addToStorage item [] = [item]
+addToStorage item [pair]
+    | fst pair == fst item = [(fst pair, snd pair + snd item)]
+    | otherwise = addToStorage item []
 addToStorage item (pair : list)
-    | fst pair == fst item = (fst pair, snd pair + snd item) : addToStorage item list
+    | fst pair == fst item = (fst pair, snd pair + snd item) : list
     | otherwise = addToStorage item list
 
 removeFromStorage :: Maybe StorageItem -> StorageList -> StorageList

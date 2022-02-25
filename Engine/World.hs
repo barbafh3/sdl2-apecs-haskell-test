@@ -13,6 +13,7 @@ makeWorld "World" [
     ''IdleMovement, ''TargetPosition, ''IdlePoint, ''Rng, ''Sprite, ''Building, ''StorageSpace,
     ''BoundingBox, ''DrawLevel, ''InteractionBox, ''InfoPanel, ''EntityName, ''Hauler, ''Origin,
     ''Destination, '' Builder, ''Backpack, ''HaulTask, ''HaulRequest, ''Button, ''Fonts,
-    ''UIText, ''InterfaceBox, ''HouseButton, ''SelectedConstruction, ''ConstructionMaterials]
+    ''UIText, ''InterfaceBox, ''HouseButton, ''SelectedConstruction, ''ConstructionMaterials,
+    ''ConstructionStorage]
 
 type System' a = System World a
