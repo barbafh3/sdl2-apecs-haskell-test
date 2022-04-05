@@ -1,23 +1,28 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+
 module Engine.Update where
 
-import Apecs
-import qualified SDL
-import Linear(V2(..))
-import Foreign.C.Types
-
-import Engine.World
-import Engine.Components
-import System.Random (StdGen)
-import Engine.Utils (gget)
+import Apecs (cmap, cmapM_, global, liftIO, set)
 import Control.Monad (when)
-import Engine.DataTypes (DrawLevels(..))
-import Engine.Particles (spawnParticles, updateParticles, updateParticlePositions)
-import Engine.Villagers.Core (updateVillagers)
 import Engine.Buildings.Core (updateBuildings)
+import Engine.Components
+  ( DrawLevel (..),
+    MousePosition (MousePosition),
+    Position (Position),
+    Velocity (Velocity),
+  )
+import Engine.DataTypes (DrawLevels (..))
+import Engine.Particles (spawnParticles, updateParticlePositions, updateParticles)
 import Engine.UI (updateUI)
+import Engine.Utils (gget)
+import Engine.Villagers.Core (updateVillagers)
+import Engine.World (System')
+import Foreign.C.Types ()
+import Linear (V2 (..))
+import qualified SDL
+import System.Random (StdGen)
 
 step :: StdGen -> Float -> System' ()
 step rng delta = do

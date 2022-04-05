@@ -2,53 +2,66 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
--- a
-
-import Apecs
-import Control.Monad
-import Linear (V2 (..), V4(..))
-import System.Random
-import qualified SDL
-import qualified SDL.Image
-import qualified SDL.Framerate as Frames
-import Engine.World
-import Engine.Components
-import Engine.Update
-import Engine.Rendering
-import Engine.Villagers.Spawn (spawnHauler)
+import Apecs (liftIO, newEntity, runSystem)
+import Control.Monad (unless)
 import Engine.Buildings.Spawn (spawnFinishedHouse, spawnFinishedStorage)
-import Engine.Constants (
-  tileSize, 
-  defaultRectSize, 
-  defaultRectSizeV2, 
-  tilesetPath, 
-  screenWidth, 
-  screenHeight, 
-  pxFontPath, 
-  ptsFontPath)
-import Engine.DataTypes (DrawLevels(Debug), StructureState (Enabled, Construction))
-import Engine.Input (handleInputPayload)
-import Engine.Utils (loadFonts, createResourceMap, (<#>))
-import qualified SDL.Font
-import Engine.Particles (spawnParticles)
-import Engine.UI (spawnButton)
 import Engine.Colors (background)
+import Engine.Components
+  ( BoundingBox (BoundingBox),
+    Building (Building),
+    DrawLevel (DrawLevel),
+    EntityName (EntityName),
+    Fonts (Fonts),
+    InfoPanel (InfoPanel),
+    InteractionBox (InteractionBox),
+    Position (Position),
+    Rng (Rng),
+    SelectedConstruction (SelectedConstruction),
+    Sprite (Sprite),
+    UIText (UIText),
+  )
+import Engine.Constants
+  ( defaultRectSize,
+    defaultRectSizeV2,
+    ptsFontPath,
+    pxFontPath,
+    screenHeight,
+    screenWidth,
+    tileSize,
+    tilesetPath,
+  )
+import Engine.DataTypes (DrawLevels (Debug), StructureState (Construction, Enabled))
+import Engine.Input (handleInputPayload)
+import Engine.Particles (spawnParticles)
+import Engine.Rendering (draw)
+import Engine.UI (spawnButton)
+import Engine.Update (step)
+import Engine.Utils (createResourceMap, loadFonts, (<#>))
+import Engine.Villagers.Spawn (spawnHauler)
+import Engine.World (System', initWorld)
+import Linear (V2 (..), V4 (..))
+import qualified SDL
+import qualified SDL.Font
+import qualified SDL.Framerate as Frames
+import qualified SDL.Image
 import SDL.Video (textureColorMod)
+import System.Random (StdGen, mkStdGen, randomIO)
 
 main :: IO ()
 main = do
   world <- initWorld
   SDL.initialize [SDL.InitVideo]
   SDL.Font.initialize
-  let winConfig = SDL.defaultWindow { SDL.windowInitialSize = V2 screenWidth screenHeight }
+  let winConfig = SDL.defaultWindow {SDL.windowInitialSize = V2 screenWidth screenHeight}
   window <- SDL.createWindow "Protobuilder-HS" winConfig
-  renderer <- SDL.createRenderer 
-                window 
-                (-1) 
-                SDL.RendererConfig {
-                    SDL.rendererType = SDL.AcceleratedRenderer, 
-                    SDL.rendererTargetTexture = False
-                }
+  renderer <-
+    SDL.createRenderer
+      window
+      (-1)
+      SDL.RendererConfig
+        { SDL.rendererType = SDL.AcceleratedRenderer,
+          SDL.rendererTargetTexture = False
+        }
   SDL.showWindow window
   manager <- Frames.manager
   Frames.set manager 60
@@ -93,18 +106,19 @@ main = do
   SDL.quit
   putStrLn "Main: Closing game..."
 
-initializeGame :: StdGen ->  System' ()
+initializeGame :: StdGen -> System' ()
 initializeGame rng = do
   spawnHauler (V2 680 300) (V2 640 450) (V2 100 100)
   spawnHauler (V2 600 100) (V2 640 450) (V2 100 100)
   spawnFinishedHouse (V2 1000 200)
-  newEntity (
-      Building Enabled,
+  newEntity
+    ( Building Enabled,
       EntityName "Idle Point",
       Sprite (V2 (2 * tileSize) (6 * tileSize)) defaultRectSize 1,
       BoundingBox (V2 640 450) (V2 8 8),
       InteractionBox (V2 640 450) defaultRectSizeV2,
-      Position $ V2 640 450)
+      Position $ V2 640 450
+    )
   spawnFinishedStorage (V2 300 500) [("Wood", 100)] Enabled
   spawnButton (V2 50 800) (1, 2) (V2 24 24) 2
   newEntity $ Rng rng

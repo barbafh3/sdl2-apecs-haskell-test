@@ -1,8 +1,8 @@
-module Engine.Constants (
-    screenWidth, 
-    screenHeight, 
-    horizontalTileCount, 
-    verticalTileCount, 
+module Engine.Constants
+  ( screenWidth,
+    screenHeight,
+    horizontalTileCount,
+    verticalTileCount,
     tileSize,
     tileSizeF,
     defaultRectSize,
@@ -12,10 +12,12 @@ module Engine.Constants (
     ptsFontPath,
     fontCharSize,
     targetFps,
-    haulerCapacity
-) where
-import Linear (V2(V2))
+    haulerCapacity,
+  )
+where
+
 import Foreign.C (CInt)
+import Linear (V2 (V2))
 
 screenWidth, screenHeight :: CInt
 screenWidth = 1280
@@ -26,10 +28,13 @@ targetFps = 60
 
 tileSize :: CInt
 tileSize = 16
+
+tileSizeF :: Float
 tileSizeF = 16.0
 
 defaultRectSize :: V2 CInt
 defaultRectSize = V2 tileSize tileSize
+
 defaultRectSizeV2 :: V2 Float
 defaultRectSizeV2 = V2 tileSizeF tileSizeF
 

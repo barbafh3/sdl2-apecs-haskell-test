@@ -1,28 +1,35 @@
-{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeApplications #-}
 
-module Engine.Buildings.Core (
-  updateBuildings,
-) where
+module Engine.Buildings.Core
+  ( updateBuildings,
+  )
+where
 
-import Engine.Components
-import Engine.DataTypes
-import Engine.Utils (gget)
-import Linear (V2(..))
-import Engine.World (System', World)
-import Engine.Buildings.Tasks (runBuildingTask)
-import SDL (Texture, ($=))
-import Engine.Colors (background, red)
-import SDL.Video
-import Engine.Collisions (areBoxesColliding)
-import Control.Monad (when)
-import Apecs ( Entity(Entity), set, get, cmapM )
+import Apecs (Entity (Entity), cmapM, get, set)
 import Apecs.System (cmapM_)
+import Control.Monad (when)
+import Engine.Buildings.Tasks (runBuildingTask)
+import Engine.Collisions (areBoxesColliding)
+import Engine.Colors (background, red)
+import Engine.Components
+  ( BoundingBox (BoundingBox),
+    Building (Building),
+    InteractionBox (InteractionBox),
+    MousePosition (..),
+    Position (Position),
+    Sprite (Sprite),
+  )
+import Engine.DataTypes (StructureState (Placement))
+import Engine.Utils (gget)
+import Engine.World (System', World)
+import Linear (V2 (..))
+import SDL (Texture, ($=))
+import SDL.Video ()
 
-updateBuildings :: Float -> System'()
+updateBuildings :: Float -> System' ()
 updateBuildings dT = do
   runBuildingTask
   followMouseCursor
-
 
 followMouseCursor :: System' ()
 followMouseCursor = do
@@ -34,5 +41,3 @@ followMouseCursor = do
         let pos = V2 (mx - (fromIntegral sw / 2)) (my - (fromIntegral sh / 2))
         set building (Position pos, InteractionBox pos ibSize, BoundingBox pos bbSize)
       _ -> return ()
-
-

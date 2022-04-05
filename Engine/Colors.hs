@@ -1,13 +1,24 @@
-module Engine.Colors(
-    black, blackF, blackP, blackPA, whitePA, blackPA2, brownA,
-    background, backgroundA, white, red
-) where
-import qualified SDL.Font
-import qualified SDL
-import qualified SDL.Primitive
-import Linear (V4(V4))
+module Engine.Colors
+  ( black,
+    blackF,
+    blackP,
+    blackPA,
+    whitePA,
+    blackPA2,
+    brownA,
+    background,
+    backgroundA,
+    white,
+    red,
+  )
+where
+
 import qualified Data.Word as GHC.Word
 import GHC.Word (Word8)
+import Linear (V4 (V4))
+import qualified SDL
+import qualified SDL.Font
+import qualified SDL.Primitive
 
 red :: SDL.V3 Word8
 red = SDL.V3 255 0 0
